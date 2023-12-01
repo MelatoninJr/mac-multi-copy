@@ -1,19 +1,20 @@
 import time
 import pyperclip
-import pyautogui
 from pynput import keyboard
-from pync import Notifier
-Notifier.notify('Test notification', title='Notification Test', timeout=2)
+import subprocess
+
 clipboard_history = []
 previous_clipboard = pyperclip.paste()
 current_modifiers = set()
 current_index = 0
 previous_index = 0
 
-def show_popup_preview(value):
-    # Show a macOS notification with the clipboard value
-    Notifier.notify(value, title='Clipboard Preview', timeout=2)
+def notify(title, text):
+    if not isinstance(title, str) or not isinstance(text, str):
+        raise TypeError('Title and text must be strings.')
 
+    cmd = 'display notification "{}" with title "{}"'.format(text, title)
+    subprocess.call(['osascript', '-e', cmd])
 def on_press(key):
     global clipboard_history, current_index, previous_index
 
@@ -28,9 +29,9 @@ def on_press(key):
             previous_value = clipboard_history[current_index]
             pyperclip.copy(previous_value)
             print("Clipboard updated with previous value:", previous_value)
-
+            notify('Clipboard Updated', f'Current Copied Value: {previous_value}')
             # Show the popup preview
-            show_popup_preview(previous_value)
+            #show_popup_preview(previous_value)
 
     if key == keyboard.KeyCode.from_char('r') and all(modifier in current_modifiers for modifier in [keyboard.Key.ctrl, keyboard.Key.shift]):
         if len(clipboard_history) > 0:
@@ -40,6 +41,14 @@ def on_press(key):
             previous_value = clipboard_history[current_index]
             pyperclip.copy(previous_value)
             print("Clipboard updated with previous index value:", previous_value)
+            notify('Clipboard Updated', f'Current Copied Value: {previous_value}')
+
+    if key == keyboard.KeyCode.from_char('t') and all(modifier in current_modifiers for modifier in [keyboard.Key.ctrl, keyboard.Key.shift]):
+        # Reset clipboard history and index variables
+        clipboard_history = []
+        current_index = 0
+        previous_index = 0
+        notify('Clipboard History Reset', 'Clipboard history and index reset')
 
 def on_release(key):
     global current_modifiers
@@ -60,7 +69,7 @@ while True:
         clipboard_history.append(current_clipboard)  # Store current clipboard value
 
         # Show the popup preview
-        show_popup_preview(current_clipboard)
+        #show_popup_preview(current_clipboard)
 
         previous_clipboard = current_clipboard
 
